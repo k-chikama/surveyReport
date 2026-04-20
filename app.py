@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
-"""
-アンケート集計レポート自動生成システム
-Streamlit Web アプリ（手動入力版）
-
-起動方法:
-  streamlit run app.py
-"""
-
 import streamlit as st
 import json
 import os
 
 from pdf_generator import generate_pdf
 from ocr_gcv import is_gcv_available, image_to_questions
+
+try:
+    from streamlit_local_storage import LocalStorage
+    _ls = LocalStorage()
+    _LS_OK = True
+except Exception:
+    _ls = None
+    _LS_OK = False
 
 # ─────────────────────────────────────────────
 # ページ設定
@@ -27,10 +27,29 @@ st.title("📊 アンケート集計レポート生成システム")
 st.caption("質問と集計データを入力して、印刷用PDFレポートを自動生成します。")
 
 # ─────────────────────────────────────────────
-# セッション状態の初期化
+# セッション状態の初期化（localStorage からの復元含む）
 # ─────────────────────────────────────────────
 if "sections" not in st.session_state:
-    st.session_state.sections = []   # [{title, note, items:[{label,count}]}, ...]
+    st.session_state.sections = []
+
+if "past_labels" not in st.session_state:
+    st.session_state.past_labels = []
+
+if "storage_loaded" not in st.session_state:
+    if _LS_OK:
+        _saved = _ls.getItem("survey_sections")
+        if _saved:
+            try:
+                st.session_state.sections = json.loads(_saved)
+            except Exception:
+                pass
+        _saved_lbl = _ls.getItem("survey_past_labels")
+        if _saved_lbl:
+            try:
+                st.session_state.past_labels = json.loads(_saved_lbl)
+            except Exception:
+                pass
+    st.session_state.storage_loaded = True
 
 if "edit_index" not in st.session_state:
     st.session_state.edit_index = None
@@ -39,24 +58,34 @@ if "edit_index" not in st.session_state:
 # ヘルパー
 # ─────────────────────────────────────────────
 def sections_to_pdf_format(sections_state):
-    """セッション状態 → pdf_generator 用フォーマット"""
     result = []
     for sec in sections_state:
         items = [(row["label"], int(row["count"])) for row in sec["items"] if row["label"].strip()]
-        result.append({
-            "title": sec["title"],
-            "note":  sec.get("note", ""),
-            "items": items,
-        })
+        result.append({"title": sec["title"], "note": sec.get("note", ""), "items": items})
     return result
 
 def calc_base(sections_state):
-    """最大人数合計をベースとして算出（最初の単一回答設問を優先）"""
     for sec in sections_state:
         total = sum(int(r["count"]) for r in sec["items"] if r["label"].strip())
         if total > 0:
             return total
     return 1
+
+def save_to_storage():
+    if not _LS_OK:
+        return
+    _ls.setItem("survey_sections", json.dumps(st.session_state.sections, ensure_ascii=False))
+    used = {item["label"] for sec in st.session_state.sections for item in sec["items"] if item["label"].strip()}
+    merged = sorted(set(st.session_state.past_labels) | used)
+    st.session_state.past_labels = merged
+    _ls.setItem("survey_past_labels", json.dumps(merged, ensure_ascii=False))
+
+def clear_storage():
+    if not _LS_OK:
+        return
+    _ls.setItem("survey_sections", json.dumps([], ensure_ascii=False))
+    st.session_state.past_labels = []
+    _ls.setItem("survey_past_labels", json.dumps([], ensure_ascii=False))
 
 # ─────────────────────────────────────────────
 # サイドバー：レポート設定
@@ -64,31 +93,19 @@ def calc_base(sections_state):
 with st.sidebar:
     st.header("⚙️ レポート設定")
 
-    report_title = st.text_input(
-        "レポートタイトル",
-        value="アンケート調査結果報告書",
-    )
+    report_title = st.text_input("レポートタイトル", value="アンケート調査結果報告書")
 
-    base_mode = st.radio(
-        "集計ベース（分母）",
-        ["自動（最初の設問の合計）", "手動で指定"],
-        index=0,
-    )
+    base_mode = st.radio("集計ベース（分母）", ["自動（最初の設問の合計）", "手動で指定"], index=0)
     if base_mode == "手動で指定":
         base_value = st.number_input("集計ベース人数", min_value=1, value=290, step=1)
     else:
         base_value = None
 
-    graph_type = st.selectbox(
-        "グラフ種類",
-        ["縦棒グラフ", "円グラフ", "横棒グラフ"],
-        index=0,
-    )
+    graph_type = st.selectbox("グラフ種類", ["縦棒グラフ", "円グラフ", "横棒グラフ"], index=0)
 
     st.divider()
     st.markdown("### 💾 データ管理")
 
-    # JSON エクスポート
     if st.session_state.sections:
         json_str = json.dumps(st.session_state.sections, ensure_ascii=False, indent=2)
         st.download_button(
@@ -98,12 +115,12 @@ with st.sidebar:
             mime="application/json",
         )
 
-    # JSON インポート
     uploaded_json = st.file_uploader("📤 JSONデータを読み込む", type=["json"])
     if uploaded_json:
         try:
             loaded = json.loads(uploaded_json.read().decode("utf-8"))
             st.session_state.sections = loaded
+            save_to_storage()
             st.success("データを読み込みました")
             st.rerun()
         except Exception as e:
@@ -159,11 +176,8 @@ with tab_ocr:
                 if st.button("✅ 選択した設問を追加（人数は後で入力）", type="primary", use_container_width=True):
                     for q in selected:
                         items = [{"label": c, "count": 0} for c in q.choices] if q.choices else [{"label": "", "count": 0}]
-                        st.session_state.sections.append({
-                            "title": q.title,
-                            "note": q.note,
-                            "items": items,
-                        })
+                        st.session_state.sections.append({"title": q.title, "note": q.note, "items": items})
+                    save_to_storage()
                     del st.session_state["ocr_questions"]
                     del st.session_state["ocr_raw"]
                     st.success(f"{len(selected)}件の設問を追加しました。「データ入力」タブで人数を入力してください。")
@@ -185,7 +199,6 @@ with tab_input:
         st.markdown("**回答項目と人数**")
         st.caption("空行は無視されます")
 
-        # 動的行追加
         if "row_count" not in st.session_state:
             st.session_state.row_count = 4
 
@@ -206,6 +219,23 @@ with tab_input:
             st.session_state.row_count = 4
             st.rerun()
 
+        # 過去の項目からサジェスト
+        if st.session_state.past_labels:
+            with st.expander("💡 過去の項目から追加", expanded=False):
+                st.caption("過去に登録した項目を選んでクリックすると入力欄に追加されます")
+                selected_suggestions = st.multiselect(
+                    "追加する項目を選択",
+                    options=st.session_state.past_labels,
+                    key="suggestions_select",
+                    label_visibility="collapsed",
+                )
+                if st.button("選択した項目を行に追加") and selected_suggestions:
+                    start = st.session_state.row_count
+                    st.session_state.row_count += len(selected_suggestions)
+                    for i, lbl in enumerate(selected_suggestions):
+                        st.session_state[f"label_{start + i}"] = lbl
+                    st.rerun()
+
         if st.button("✅ この設問を追加", type="primary", use_container_width=True):
             valid_rows = [r for r in rows if r["label"].strip()]
             if not q_title.strip():
@@ -213,12 +243,8 @@ with tab_input:
             elif not valid_rows:
                 st.error("1件以上の回答項目を入力してください")
             else:
-                st.session_state.sections.append({
-                    "title": q_title,
-                    "note":  q_note,
-                    "items": valid_rows,
-                })
-                # 入力欄リセット
+                st.session_state.sections.append({"title": q_title, "note": q_note, "items": valid_rows})
+                save_to_storage()
                 st.session_state.row_count = 4
                 for i in range(20):
                     for key in [f"label_{i}", f"count_{i}"]:
@@ -239,7 +265,6 @@ with tab_input:
                     total = sum(int(r["count"]) for r in sec["items"])
                     st.caption(f"回答合計: {total}人  |  項目数: {len(sec['items'])}件")
 
-                    # 簡易テーブル表示
                     for row in sec["items"]:
                         if row["label"].strip():
                             pct = int(row["count"]) / total * 100 if total > 0 else 0
@@ -249,17 +274,22 @@ with tab_input:
                     if col_up.button("↑ 上へ", key=f"up_{idx}") and idx > 0:
                         s = st.session_state.sections
                         s[idx], s[idx-1] = s[idx-1], s[idx]
+                        save_to_storage()
                         st.rerun()
                     if col_dn.button("↓ 下へ", key=f"dn_{idx}") and idx < len(st.session_state.sections)-1:
                         s = st.session_state.sections
                         s[idx], s[idx+1] = s[idx+1], s[idx]
+                        save_to_storage()
                         st.rerun()
                     if col_del.button("🗑️ 削除", key=f"del_{idx}"):
                         st.session_state.sections.pop(idx)
+                        save_to_storage()
                         st.rerun()
 
-            if st.button("🗑️ 全設問を削除", use_container_width=True):
+            st.divider()
+            if st.button("🗑️ 全設問を削除", use_container_width=True, type="secondary"):
                 st.session_state.sections = []
+                clear_storage()
                 st.rerun()
 
 # ══════════════════════════════════════════════
@@ -271,7 +301,6 @@ with tab_preview:
     if not st.session_state.sections:
         st.info("「データ入力」タブで設問を追加してください")
     else:
-        # ベース計算
         if base_value is not None:
             base = base_value
         else:
@@ -288,13 +317,11 @@ with tab_preview:
             if not items:
                 continue
 
-            # テーブル
             import pandas as pd
             df = pd.DataFrame(items, columns=["項目", "人数"])
             df["割合（%）"] = df["人数"].apply(lambda x: f"{x/base*100:.1f}%")
             st.dataframe(df, use_container_width=True, hide_index=True)
 
-            # グラフプレビュー（matplotlib）
             import matplotlib
             matplotlib.use("Agg")
             import matplotlib.pyplot as plt

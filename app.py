@@ -145,26 +145,86 @@ with tab_ocr:
         if uploaded_img:
             from PIL import Image as PILImage
             pil_img = PILImage.open(uploaded_img).convert("RGB")
-            st.image(pil_img, caption="アップロード画像", use_container_width=True)
 
             if st.button("🔍 OCRで読み取る", type="primary"):
                 with st.spinner("読み取り中..."):
                     try:
                         from ocr_gcv import image_to_text
-                        raw_text = image_to_text(pil_img, api_key)
-                        st.session_state["ocr_raw"] = raw_text
+                        st.session_state["ocr_raw"] = image_to_text(pil_img, api_key)
                     except Exception as e:
                         st.error(f"OCRエラー: {e}")
 
         if "ocr_raw" in st.session_state:
             st.divider()
-            st.caption("各行の右上のコピーボタンで1行ずつコピーして「データ入力」タブに貼り付けてください。")
-            lines = [l for l in st.session_state["ocr_raw"].splitlines() if l.strip()]
-            for line in lines:
-                st.code(line, language=None)
-            if st.button("🔄 クリア", use_container_width=True):
-                del st.session_state["ocr_raw"]
-                st.rerun()
+            ocr_col, form_col = st.columns([1, 1], gap="large")
+
+            with ocr_col:
+                st.markdown("**📄 OCRテキスト**")
+                st.caption("テキストを選択してコピーし、右の入力欄に貼り付けてください")
+                st.text_area(
+                    "ocr_text",
+                    value=st.session_state["ocr_raw"],
+                    height=550,
+                    label_visibility="collapsed",
+                    key="ocr_text_display",
+                )
+                if st.button("🔄 OCR結果をクリア", use_container_width=True):
+                    del st.session_state["ocr_raw"]
+                    st.rerun()
+
+            with form_col:
+                st.markdown("**➕ 設問を追加**")
+
+                o_title = st.text_input("設問タイトル", placeholder="例）問1. 性別を教えてください", key="ocr_q_title")
+                o_note  = st.text_input("補足メモ（任意）", placeholder="例）※複数回答可", key="ocr_q_note")
+
+                st.markdown("**回答項目と人数**")
+                st.caption("空行は無視されます")
+
+                if "ocr_row_count" not in st.session_state:
+                    st.session_state.ocr_row_count = 4
+
+                o_rows = []
+                for i in range(st.session_state.ocr_row_count):
+                    c1, c2 = st.columns([3, 1])
+                    lbl = c1.text_input(f"項目{i+1}", key=f"ocr_label_{i}", label_visibility="collapsed", placeholder=f"項目{i+1}")
+                    cnt = c2.number_input("人数", min_value=0, value=0, key=f"ocr_count_{i}", label_visibility="collapsed")
+                    o_rows.append({"label": lbl, "count": cnt})
+
+                col_oadd, col_oclr = st.columns(2)
+                if col_oadd.button("＋ 行を追加", key="ocr_add_row"):
+                    st.session_state.ocr_row_count += 2
+                    st.rerun()
+                if col_oclr.button("行数をリセット", key="ocr_reset_row"):
+                    st.session_state.ocr_row_count = 4
+                    st.rerun()
+
+                if st.session_state.past_labels:
+                    with st.expander("💡 過去の項目から追加", expanded=False):
+                        o_suggestions = st.multiselect("追加する項目を選択", options=st.session_state.past_labels, key="ocr_suggestions")
+                        if st.button("選択した項目を行に追加", key="ocr_add_suggestion") and o_suggestions:
+                            start = st.session_state.ocr_row_count
+                            st.session_state.ocr_row_count += len(o_suggestions)
+                            for i, lbl in enumerate(o_suggestions):
+                                st.session_state[f"ocr_label_{start + i}"] = lbl
+                            st.rerun()
+
+                if st.button("✅ この設問を追加", type="primary", use_container_width=True, key="ocr_submit"):
+                    valid_rows = [r for r in o_rows if r["label"].strip()]
+                    if not o_title.strip():
+                        st.error("設問タイトルを入力してください")
+                    elif not valid_rows:
+                        st.error("1件以上の回答項目を入力してください")
+                    else:
+                        st.session_state.sections.append({"title": o_title, "note": o_note, "items": valid_rows})
+                        save_to_storage()
+                        st.session_state.ocr_row_count = 4
+                        for i in range(30):
+                            for k in [f"ocr_label_{i}", f"ocr_count_{i}"]:
+                                if k in st.session_state:
+                                    del st.session_state[k]
+                        st.success(f"「{o_title}」を追加しました")
+                        st.rerun()
 
 # ══════════════════════════════════════════════
 # タブ1：データ入力

@@ -37,16 +37,12 @@ if "past_labels" not in st.session_state:
 
 if "storage_loaded" not in st.session_state:
     if _LS_OK:
-        _saved = _ls.getItem("survey_sections")
+        _saved = _ls.getItem("survey_data", key="ls_get_survey_data")
         if _saved:
             try:
-                st.session_state.sections = json.loads(_saved)
-            except Exception:
-                pass
-        _saved_lbl = _ls.getItem("survey_past_labels")
-        if _saved_lbl:
-            try:
-                st.session_state.past_labels = json.loads(_saved_lbl)
+                _data = json.loads(_saved)
+                st.session_state.sections = _data.get("sections", [])
+                st.session_state.past_labels = _data.get("past_labels", [])
             except Exception:
                 pass
     st.session_state.storage_loaded = True
@@ -74,18 +70,22 @@ def calc_base(sections_state):
 def save_to_storage():
     if not _LS_OK:
         return
-    _ls.setItem("survey_sections", json.dumps(st.session_state.sections, ensure_ascii=False))
     used = {item["label"] for sec in st.session_state.sections for item in sec["items"] if item["label"].strip()}
     merged = sorted(set(st.session_state.past_labels) | used)
     st.session_state.past_labels = merged
-    _ls.setItem("survey_past_labels", json.dumps(merged, ensure_ascii=False))
+    _ls.setItem("survey_data", json.dumps(
+        {"sections": st.session_state.sections, "past_labels": merged},
+        ensure_ascii=False,
+    ), key="ls_set_survey_data")
 
 def clear_storage():
     if not _LS_OK:
         return
-    _ls.setItem("survey_sections", json.dumps([], ensure_ascii=False))
     st.session_state.past_labels = []
-    _ls.setItem("survey_past_labels", json.dumps([], ensure_ascii=False))
+    _ls.setItem("survey_data", json.dumps(
+        {"sections": [], "past_labels": []},
+        ensure_ascii=False,
+    ), key="ls_set_survey_data")
 
 # ─────────────────────────────────────────────
 # サイドバー：レポート設定

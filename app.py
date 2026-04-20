@@ -150,38 +150,21 @@ with tab_ocr:
             if st.button("🔍 OCRで読み取る", type="primary"):
                 with st.spinner("読み取り中..."):
                     try:
-                        questions, raw_text = image_to_questions(pil_img, api_key)
-                        st.session_state["ocr_questions"] = questions
+                        from ocr_gcv import image_to_text
+                        raw_text = image_to_text(pil_img, api_key)
                         st.session_state["ocr_raw"] = raw_text
                     except Exception as e:
                         st.error(f"OCRエラー: {e}")
 
-        if "ocr_questions" in st.session_state:
+        if "ocr_raw" in st.session_state:
             st.divider()
-            with st.expander("📄 OCR生テキスト", expanded=False):
-                st.text(st.session_state["ocr_raw"])
-
-            questions = st.session_state["ocr_questions"]
-            if not questions:
-                st.warning("設問構造を自動検出できませんでした。生テキストを確認して手動入力してください。")
-            else:
-                st.markdown(f"**{len(questions)}件の設問を検出しました。** 追加したい設問を選んでください。")
-                selected = []
-                for i, q in enumerate(questions):
-                    checked = st.checkbox(f"Q{i+1}. {q.title}", value=True, key=f"ocr_chk_{i}")
-                    if checked:
-                        st.caption(f"選択肢: {', '.join(q.choices) if q.choices else '（なし）'}")
-                        selected.append(q)
-
-                if st.button("✅ 選択した設問を追加（人数は後で入力）", type="primary", use_container_width=True):
-                    for q in selected:
-                        items = [{"label": c, "count": 0} for c in q.choices] if q.choices else [{"label": "", "count": 0}]
-                        st.session_state.sections.append({"title": q.title, "note": q.note, "items": items})
-                    save_to_storage()
-                    del st.session_state["ocr_questions"]
-                    del st.session_state["ocr_raw"]
-                    st.success(f"{len(selected)}件の設問を追加しました。「データ入力」タブで人数を入力してください。")
-                    st.rerun()
+            st.caption("各行の右上のコピーボタンで1行ずつコピーして「データ入力」タブに貼り付けてください。")
+            lines = [l for l in st.session_state["ocr_raw"].splitlines() if l.strip()]
+            for line in lines:
+                st.code(line, language=None)
+            if st.button("🔄 クリア", use_container_width=True):
+                del st.session_state["ocr_raw"]
+                st.rerun()
 
 # ══════════════════════════════════════════════
 # タブ1：データ入力

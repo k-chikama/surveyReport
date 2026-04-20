@@ -37,7 +37,7 @@ if "past_labels" not in st.session_state:
 
 if "storage_loaded" not in st.session_state:
     if _LS_OK:
-        _saved = _ls.getItem("survey_data", key="ls_get_survey_data")
+        _saved = _ls.getItem("survey_data")
         if _saved:
             try:
                 _data = json.loads(_saved)

@@ -152,7 +152,7 @@ with st.sidebar:
 # ─────────────────────────────────────────────
 # メインエリア：タブ構成
 # ─────────────────────────────────────────────
-tab_ocr, tab_input, tab_preview, tab_export = st.tabs(["📷 OCR読み取り", "📝 データ入力", "👁️ プレビュー", "📄 PDF出力"])
+tab_ocr, tab_input, tab_bulk, tab_preview, tab_export = st.tabs(["📷 OCR読み取り", "📝 データ入力", "📋 一括入力", "👁️ プレビュー", "📄 PDF出力"])
 
 # ══════════════════════════════════════════════
 # タブ0：OCR読み取り
@@ -225,9 +225,19 @@ with tab_ocr:
                 if st.session_state.past_sections:
                     with st.expander("💡 過去の設問から追加", expanded=False):
                         past_titles = [s["title"] for s in st.session_state.past_sections]
-                        chosen = st.selectbox("設問を選択するとフォームに自動入力されます", [""] + past_titles, key="ocr_past_select", label_visibility="collapsed")
-                        if st.button("選択した設問をフォームに入力", key="ocr_apply_past") and chosen:
-                            target = next(s for s in st.session_state.past_sections if s["title"] == chosen)
+                        ocr_multi = st.multiselect("設問を選択", past_titles, key="ocr_past_multi", label_visibility="collapsed")
+                        c1, c2 = st.columns(2)
+                        if c1.button("一括追加（人数は後で入力）", key="ocr_bulk_add") and ocr_multi:
+                            for title in ocr_multi:
+                                t = next(s for s in st.session_state.past_sections if s["title"] == title)
+                                items = [{"label": it["label"], "count": 0} for it in t["items"]]
+                                new_s = {"title": t["title"], "note": t["note"], "items": items}
+                                st.session_state.sections.append(new_s)
+                            save_to_storage(None)
+                            st.toast(f"{len(ocr_multi)}件の設問を追加しました ✅")
+                            st.rerun()
+                        if c2.button("フォームに入力（1件）", key="ocr_apply_past") and ocr_multi:
+                            target = next(s for s in st.session_state.past_sections if s["title"] == ocr_multi[0])
                             st.session_state["ocr_pending_fill"] = target
                             st.rerun()
 
@@ -291,9 +301,19 @@ with tab_input:
         if st.session_state.past_sections:
             with st.expander("💡 過去の設問から追加", expanded=False):
                 past_titles = [s["title"] for s in st.session_state.past_sections]
-                chosen_past = st.selectbox("設問を選択するとフォームに自動入力されます", [""] + past_titles, key="tab_past_select", label_visibility="collapsed")
-                if st.button("選択した設問をフォームに入力", key="tab_apply_past") and chosen_past:
-                    target = next(s for s in st.session_state.past_sections if s["title"] == chosen_past)
+                tab_multi = st.multiselect("設問を選択", past_titles, key="tab_past_multi", label_visibility="collapsed")
+                c1, c2 = st.columns(2)
+                if c1.button("一括追加（人数は後で入力）", key="tab_bulk_add") and tab_multi:
+                    for title in tab_multi:
+                        t = next(s for s in st.session_state.past_sections if s["title"] == title)
+                        items = [{"label": it["label"], "count": 0} for it in t["items"]]
+                        new_s = {"title": t["title"], "note": t["note"], "items": items}
+                        st.session_state.sections.append(new_s)
+                    save_to_storage(None)
+                    st.toast(f"{len(tab_multi)}件の設問を追加しました ✅")
+                    st.rerun()
+                if c2.button("フォームに入力（1件）", key="tab_apply_past") and tab_multi:
+                    target = next(s for s in st.session_state.past_sections if s["title"] == tab_multi[0])
                     st.session_state["tab_pending_fill"] = target
                     st.rerun()
 
@@ -357,7 +377,57 @@ with tab_input:
                 st.rerun()
 
 # ══════════════════════════════════════════════
-# タブ2：プレビュー
+# タブ2：一括入力
+# ══════════════════════════════════════════════
+with tab_bulk:
+    st.subheader("📋 設問を一括入力")
+    st.caption("設問タイトルと項目（1行1項目）を入力して、まとめて追加できます。人数はあとで「データ入力」タブから入力してください。")
+
+    if "bulk_q_count" not in st.session_state:
+        st.session_state.bulk_q_count = 3
+
+    bulk_slots = []
+    for i in range(st.session_state.bulk_q_count):
+        st.markdown(f"---\n**設問 {i+1}**")
+        c1, c2 = st.columns([2, 3])
+        b_title = c1.text_input("設問タイトル", key=f"bulk_title_{i}", placeholder=f"例）問{i+1}. ○○について")
+        b_note  = c1.text_input("補足メモ（任意）", key=f"bulk_note_{i}", placeholder="例）※複数回答可")
+        b_items = c2.text_area("回答項目（1行1項目）", key=f"bulk_items_{i}", height=120,
+                               placeholder="例：\nはい\nいいえ\nわからない")
+        bulk_slots.append({"title": b_title, "note": b_note, "items_text": b_items})
+
+    st.markdown("---")
+    col_badd, col_bsub = st.columns([1, 2])
+    if col_badd.button("＋ 設問枠を追加", use_container_width=True):
+        st.session_state.bulk_q_count += 1
+        st.rerun()
+
+    if col_bsub.button("✅ すべて追加", type="primary", use_container_width=True):
+        added = 0
+        for slot in bulk_slots:
+            if not slot["title"].strip():
+                continue
+            lines = [l.strip() for l in slot["items_text"].splitlines() if l.strip()]
+            items = [{"label": l, "count": 0} for l in lines]
+            if not items:
+                continue
+            new_s = {"title": slot["title"], "note": slot["note"], "items": items}
+            st.session_state.sections.append(new_s)
+            _merge_past_sections(new_s)
+            added += 1
+        if added:
+            save_to_storage(None)
+            st.session_state.bulk_q_count = 3
+            for k in list(st.session_state.keys()):
+                if k.startswith("bulk_title_") or k.startswith("bulk_note_") or k.startswith("bulk_items_"):
+                    del st.session_state[k]
+            st.toast(f"{added}件の設問を追加しました ✅")
+            st.rerun()
+        else:
+            st.error("有効な設問（タイトルと項目が両方入力済み）がありません")
+
+# ══════════════════════════════════════════════
+# タブ3：プレビュー
 # ══════════════════════════════════════════════
 with tab_preview:
     st.subheader("📊 データプレビュー")

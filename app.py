@@ -139,14 +139,20 @@ with st.sidebar:
             mime="application/json",
         )
 
-    uploaded_json = st.file_uploader("📤 JSONデータを読み込む", type=["json"])
-    if uploaded_json:
+    uploaded_json = st.file_uploader("📤 JSONデータを読み込む", type=["json"], key="json_uploader")
+    if uploaded_json is not None:
         try:
-            loaded = json.loads(uploaded_json.read().decode("utf-8"))
-            st.session_state.sections = loaded
-            save_to_storage(None)
-            st.success("データを読み込みました")
-            st.rerun()
+            raw = uploaded_json.read()
+            loaded = json.loads(raw.decode("utf-8"))
+            if not isinstance(loaded, list):
+                st.error(f"JSONの形式が正しくありません（リスト形式が必要です）")
+            else:
+                st.session_state.sections = loaded
+                st.session_state.past_sections = st.session_state.get("past_sections", [])
+                st.session_state.storage_loaded = True
+                save_to_storage(None)
+                st.toast(f"{len(loaded)}件の設問を読み込みました ✅")
+                st.rerun()
         except Exception as e:
             st.error(f"読み込みエラー: {e}")
 

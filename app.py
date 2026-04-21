@@ -202,6 +202,22 @@ hr {
     border-radius: 10px !important;
     overflow: hidden !important;
 }
+
+/* ── モバイル対応 ── */
+@media (max-width: 768px) {
+    [data-testid="stTabs"] [role="tabpanel"] {
+        padding: 12px !important;
+    }
+    [data-testid="stTabs"] button[role="tab"] {
+        padding: 6px 10px !important;
+        font-size: 0.78rem !important;
+    }
+    .block-container {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+        padding-top: 8px !important;
+    }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -209,16 +225,18 @@ hr {
 st.markdown("""
 <div style="
     background: linear-gradient(135deg, #1a3c5e 0%, #3a7ebf 100%);
-    border-radius: 16px;
-    padding: 28px 36px;
-    margin-bottom: 20px;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
     box-shadow: 0 4px 16px rgba(26,60,94,0.25);
+    box-sizing: border-box;
+    width: 100%;
 ">
-    <h1 style="color:#fff; margin:0; font-size:1.8rem; font-weight:700;">
-        📊 アンケート集計レポート生成システム
+    <h1 style="color:#fff; margin:0; font-size:clamp(1.1rem,3vw,1.7rem); font-weight:700; line-height:1.3;">
+        📊 アンケート集計レポート生成
     </h1>
-    <p style="color:#b8d4f0; margin:8px 0 0; font-size:0.95rem;">
-        アンケートデータを入力してグラフ付きPDFレポートを自動生成します
+    <p style="color:#b8d4f0; margin:6px 0 0; font-size:clamp(0.78rem,2vw,0.9rem);">
+        アンケートデータを入力してグラフ付きPDFを自動生成します
     </p>
 </div>
 """, unsafe_allow_html=True)

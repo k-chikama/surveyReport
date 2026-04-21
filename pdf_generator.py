@@ -281,7 +281,8 @@ def _make_block(section, section_style, note_style, comment_style, graph_type, b
 
     if section.get("comment"):
         inner.append(Spacer(1, 2 * mm))
-        inner.append(Paragraph(f"【コメント】{section['comment']}", comment_style))
+        comment_text = section["comment"].replace("\n", "<br/>")
+        inner.append(Paragraph(f"【コメント】{comment_text}", comment_style))
 
     return KeepTogether([heading] + inner)
 

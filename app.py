@@ -412,7 +412,7 @@ with tab_preview:
                 continue
 
             if sec.get("comment"):
-                st.info(sec["comment"])
+                st.info(sec["comment"].replace("\n", "  \n"))
 
             import pandas as pd
             df = pd.DataFrame(items, columns=["項目", "人数"])

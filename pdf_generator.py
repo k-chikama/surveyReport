@@ -134,6 +134,12 @@ def _bar_chart(items, base):
     counts = [c for _, c in items]
     pcts   = [c / base * 100 if base > 0 else 0 for c in counts]
     n = len(items)
+
+    rotation = 0 if n <= 6 else (45 if n <= 12 else 90)
+    ha       = "center" if rotation == 0 else "right"
+    lbl_fs   = max(6, 9 - max(0, n - 6) // 3)
+    val_fs   = max(6, 8 - max(0, n - 8) // 4)
+
     fig, ax = plt.subplots(figsize=(max(10, n * 1.4), 5.5))
     fig.patch.set_facecolor("white")
     bars = ax.bar(range(n), counts, color=BAR_COLOR, width=0.55, zorder=2)
@@ -143,9 +149,10 @@ def _bar_chart(items, base):
         ax.text(bar.get_x() + bar.get_width() / 2,
                 bar.get_height() + max(counts, default=1) * 0.01,
                 f"{cnt}人\n({pct:.1f}%)",
-                ha="center", va="bottom", fontsize=8, fontproperties=fp)
+                ha="center", va="bottom", fontsize=val_fs, fontproperties=fp)
     ax.set_xticks(list(range(n)))
-    ax.set_xticklabels(labels, fontproperties=fp, fontsize=9)
+    ax.set_xticklabels(labels, fontproperties=fp, fontsize=lbl_fs,
+                       rotation=rotation, ha=ha)
     for lbl in ax.get_yticklabels():
         lbl.set_fontproperties(fp)
     ax.set_ylabel("人数（人）", fontproperties=fp, fontsize=9)
@@ -154,7 +161,7 @@ def _bar_chart(items, base):
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     if max(counts, default=0) > 0:
-        ax.set_ylim(0, max(counts) * 1.25)
+        ax.set_ylim(0, max(counts) * 1.35)
     plt.tight_layout(pad=0.5)
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
@@ -199,6 +206,7 @@ def _hbar_chart(items, base):
     counts = [c for _, c in items]
     pcts   = [c / base * 100 if base > 0 else 0 for c in counts]
     n = len(items)
+    lbl_fs = max(6, 9 - max(0, n - 10) // 3)
     fig, ax = plt.subplots(figsize=(9, max(3, n * 0.55 + 1)))
     fig.patch.set_facecolor("white")
     bars = ax.barh(range(n), counts, color=BAR_COLOR, height=0.55, zorder=2)
@@ -208,9 +216,9 @@ def _hbar_chart(items, base):
         ax.text(bar.get_width() + max(counts, default=1) * 0.01,
                 bar.get_y() + bar.get_height() / 2,
                 f"{cnt}人 ({pct:.1f}%)",
-                ha="left", va="center", fontsize=8, fontproperties=fp)
+                ha="left", va="center", fontsize=lbl_fs, fontproperties=fp)
     ax.set_yticks(list(range(n)))
-    ax.set_yticklabels(labels, fontproperties=fp, fontsize=9)
+    ax.set_yticklabels(labels, fontproperties=fp, fontsize=lbl_fs)
     for lbl in ax.get_xticklabels():
         lbl.set_fontproperties(fp)
     ax.set_xlabel("人数（人）", fontproperties=fp, fontsize=9)
@@ -219,7 +227,7 @@ def _hbar_chart(items, base):
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     if max(counts, default=0) > 0:
-        ax.set_xlim(0, max(counts) * 1.3)
+        ax.set_xlim(0, max(counts) * 1.45)
     ax.invert_yaxis()
     plt.tight_layout(pad=0.5)
     buf = io.BytesIO()

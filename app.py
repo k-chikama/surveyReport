@@ -413,16 +413,31 @@ with tab_preview:
             import matplotlib.font_manager as fm
 
             fp = fm.FontProperties(fname="fonts/NotoSansJP-Regular.ttf")
+            n = len(items)
 
             if graph_type == "縦棒グラフ":
-                fig, ax = plt.subplots(figsize=(8, 3.5))
+                rotation = 0 if n <= 6 else (45 if n <= 12 else 90)
+                ha       = "center" if rotation == 0 else "right"
+                lbl_fs   = max(6, 8 - max(0, n - 6) // 3)
+                fig, ax = plt.subplots(figsize=(max(8, n * 1.0), 4))
                 labels = [l for l, _ in items]
                 counts = [c for _, c in items]
-                ax.bar(range(len(items)), counts, color="#3a7ebf")
-                ax.set_xticks(range(len(items)))
-                ax.set_xticklabels(labels, fontproperties=fp, fontsize=8)
+                bars = ax.bar(range(n), counts, color="#3a7ebf")
+                for bar, cnt in zip(bars, counts):
+                    if cnt > 0:
+                        pct = cnt / base * 100
+                        ax.text(bar.get_x() + bar.get_width() / 2,
+                                bar.get_height() + max(counts) * 0.01,
+                                f"{cnt}\n({pct:.1f}%)",
+                                ha="center", va="bottom",
+                                fontsize=max(5, lbl_fs - 1), fontproperties=fp)
+                ax.set_xticks(range(n))
+                ax.set_xticklabels(labels, fontproperties=fp, fontsize=lbl_fs,
+                                   rotation=rotation, ha=ha)
                 for lbl in ax.get_yticklabels():
                     lbl.set_fontproperties(fp)
+                if max(counts, default=0) > 0:
+                    ax.set_ylim(0, max(counts) * 1.35)
                 ax.spines["top"].set_visible(False)
                 ax.spines["right"].set_visible(False)
                 plt.tight_layout()
@@ -432,33 +447,42 @@ with tab_preview:
             elif graph_type == "円グラフ":
                 filtered = [(l, c) for l, c in items if c > 0]
                 if filtered:
-                    fig, ax = plt.subplots(figsize=(7, 4))
-                    labels_f = [l for l, _ in filtered]
-                    counts_f = [c for _, c in filtered]
-                    wedges, texts, autotexts = ax.pie(
-                        counts_f,
-                        labels=labels_f,
-                        autopct="%1.1f%%",
-                        startangle=90,
-                        counterclock=False,
-                        textprops={"fontproperties": fp, "fontsize": 8},
-                    )
-                    for at in autotexts:
-                        at.set_fontproperties(fp)
+                    fig, ax = plt.subplots(figsize=(8, 4))
+                    lf = [l for l, _ in filtered]
+                    cf = [c for _, c in filtered]
+                    pf = [c / base * 100 for c in cf]
+                    wedges, _ = ax.pie(cf, labels=None, startangle=90,
+                                       counterclock=False,
+                                       wedgeprops={"linewidth": 0.8, "edgecolor": "white"})
+                    legend_labels = [f"{l}  {c}人 ({p:.1f}%)"
+                                     for l, c, p in zip(lf, cf, pf)]
+                    ax.legend(wedges, legend_labels, loc="center left",
+                              bbox_to_anchor=(1.0, 0.5), fontsize=8, prop=fp, frameon=False)
                     ax.set_aspect("equal")
                     plt.tight_layout()
                     st.pyplot(fig)
                     plt.close(fig)
 
             elif graph_type == "横棒グラフ":
-                fig, ax = plt.subplots(figsize=(8, max(2.5, len(items) * 0.45)))
+                lbl_fs = max(6, 8 - max(0, n - 10) // 3)
+                fig, ax = plt.subplots(figsize=(8, max(2.5, n * 0.5)))
                 labels = [l for l, _ in items]
                 counts = [c for _, c in items]
-                ax.barh(range(len(items)), counts, color="#3a7ebf")
-                ax.set_yticks(range(len(items)))
-                ax.set_yticklabels(labels, fontproperties=fp, fontsize=8)
+                bars = ax.barh(range(n), counts, color="#3a7ebf")
+                for bar, cnt in zip(bars, counts):
+                    if cnt > 0:
+                        pct = cnt / base * 100
+                        ax.text(bar.get_width() + max(counts) * 0.01,
+                                bar.get_y() + bar.get_height() / 2,
+                                f"{cnt} ({pct:.1f}%)",
+                                ha="left", va="center",
+                                fontsize=lbl_fs, fontproperties=fp)
+                ax.set_yticks(range(n))
+                ax.set_yticklabels(labels, fontproperties=fp, fontsize=lbl_fs)
                 for lbl in ax.get_xticklabels():
                     lbl.set_fontproperties(fp)
+                if max(counts, default=0) > 0:
+                    ax.set_xlim(0, max(counts) * 1.45)
                 ax.invert_yaxis()
                 ax.spines["top"].set_visible(False)
                 ax.spines["right"].set_visible(False)

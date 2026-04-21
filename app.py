@@ -50,6 +50,23 @@ if "storage_loaded" not in st.session_state:
 if "edit_index" not in st.session_state:
     st.session_state.edit_index = None
 
+# ウィジェット描画前に pending fill を適用（描画後に設定するとエラーになるため）
+if "ocr_pending_fill" in st.session_state:
+    _t = st.session_state.pop("ocr_pending_fill")
+    st.session_state["ocr_q_title"] = _t["title"]
+    st.session_state["ocr_q_note"] = _t["note"]
+    st.session_state.ocr_row_count = max(4, len(_t["items"]))
+    for _i, _item in enumerate(_t["items"]):
+        st.session_state[f"ocr_label_{_i}"] = _item["label"]
+
+if "tab_pending_fill" in st.session_state:
+    _t = st.session_state.pop("tab_pending_fill")
+    st.session_state["tab_q_title"] = _t["title"]
+    st.session_state["tab_q_note"] = _t["note"]
+    st.session_state.row_count = max(4, len(_t["items"]))
+    for _i, _item in enumerate(_t["items"]):
+        st.session_state[f"label_{_i}"] = _item["label"]
+
 # ─────────────────────────────────────────────
 # ヘルパー
 # ─────────────────────────────────────────────
@@ -211,11 +228,7 @@ with tab_ocr:
                         chosen = st.selectbox("設問を選択するとフォームに自動入力されます", [""] + past_titles, key="ocr_past_select", label_visibility="collapsed")
                         if st.button("選択した設問をフォームに入力", key="ocr_apply_past") and chosen:
                             target = next(s for s in st.session_state.past_sections if s["title"] == chosen)
-                            st.session_state["ocr_q_title"] = target["title"]
-                            st.session_state["ocr_q_note"] = target["note"]
-                            st.session_state.ocr_row_count = max(4, len(target["items"]))
-                            for i, item in enumerate(target["items"]):
-                                st.session_state[f"ocr_label_{i}"] = item["label"]
+                            st.session_state["ocr_pending_fill"] = target
                             st.rerun()
 
                 if st.button("✅ この設問を追加", type="primary", use_container_width=True, key="ocr_submit"):
@@ -281,11 +294,7 @@ with tab_input:
                 chosen_past = st.selectbox("設問を選択するとフォームに自動入力されます", [""] + past_titles, key="tab_past_select", label_visibility="collapsed")
                 if st.button("選択した設問をフォームに入力", key="tab_apply_past") and chosen_past:
                     target = next(s for s in st.session_state.past_sections if s["title"] == chosen_past)
-                    st.session_state["tab_q_title"] = target["title"]
-                    st.session_state["tab_q_note"] = target["note"]
-                    st.session_state.row_count = max(4, len(target["items"]))
-                    for i, item in enumerate(target["items"]):
-                        st.session_state[f"label_{i}"] = item["label"]
+                    st.session_state["tab_pending_fill"] = target
                     st.rerun()
 
         if st.button("✅ この設問を追加", type="primary", use_container_width=True):

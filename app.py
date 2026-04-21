@@ -38,14 +38,24 @@ if "past_sections" not in st.session_state:
 if "storage_loaded" not in st.session_state:
     if _LS_OK:
         _saved = _ls.getItem("survey_data")
-        if _saved:
+        if _saved is not None:
+            # コンポーネントからデータが届いた
             try:
                 _data = json.loads(_saved)
                 st.session_state.sections = _data.get("sections", [])
                 st.session_state.past_sections = _data.get("past_sections", [])
             except Exception:
                 pass
-    st.session_state.storage_loaded = True
+            st.session_state.storage_loaded = True
+        else:
+            # None の場合：コンポーネント未初期化 or データなし
+            # 2回試行してもNoneならデータなしと確定する
+            _attempts = st.session_state.get("_ls_attempts", 0) + 1
+            st.session_state["_ls_attempts"] = _attempts
+            if _attempts >= 2:
+                st.session_state.storage_loaded = True
+    else:
+        st.session_state.storage_loaded = True
 
 if "edit_index" not in st.session_state:
     st.session_state.edit_index = None

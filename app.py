@@ -37,15 +37,13 @@ st.markdown("""
 [data-testid="stSidebar"] {
     background: #1a3c5e;
 }
-[data-testid="stSidebar"] * {
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] span:not([data-baseweb]),
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] .stMarkdown,
+[data-testid="stSidebar"] .stCaption,
+[data-testid="stSidebar"] small {
     color: #e8f0fa !important;
-}
-[data-testid="stSidebar"] .stSelectbox label,
-[data-testid="stSidebar"] .stRadio label,
-[data-testid="stSidebar"] .stNumberInput label,
-[data-testid="stSidebar"] .stTextInput label {
-    color: #b0c8e8 !important;
-    font-size: 0.85rem !important;
 }
 [data-testid="stSidebar"] h1,
 [data-testid="stSidebar"] h2,
@@ -60,6 +58,24 @@ st.markdown("""
     border: 1px solid #4a80b8 !important;
     color: #fff !important;
     width: 100%;
+}
+
+/* ── メインエリアのテキストは常に暗色 ── */
+[data-testid="stMain"] p,
+[data-testid="stMain"] span,
+[data-testid="stMain"] label,
+[data-testid="stMain"] h1,
+[data-testid="stMain"] h2,
+[data-testid="stMain"] h3,
+[data-testid="stMain"] h4,
+[data-testid="stMain"] li,
+[data-testid="stMain"] td,
+[data-testid="stMain"] th {
+    color: #1a2a3a !important;
+}
+[data-testid="stMain"] .stCaption,
+[data-testid="stMain"] small {
+    color: #5a7a9a !important;
 }
 
 /* ── タブ ── */

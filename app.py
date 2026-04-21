@@ -111,15 +111,31 @@ st.markdown("""
     color: #1a3c5e !important;
 }
 
-/* ── 入力欄 ── */
+/* ── 入力欄（メインエリア） ── */
 .stTextInput input, .stTextArea textarea, .stNumberInput input {
     border-radius: 8px !important;
     border: 1px solid #d0dce8 !important;
     background: #fafdff !important;
+    color: #1a2a3a !important;
 }
 .stTextInput input:focus, .stTextArea textarea:focus {
     border-color: #3a7ebf !important;
     box-shadow: 0 0 0 2px rgba(58,126,191,0.15) !important;
+}
+
+/* ── サイドバー内の入力欄 ── */
+[data-testid="stSidebar"] .stTextInput input,
+[data-testid="stSidebar"] .stTextArea textarea,
+[data-testid="stSidebar"] .stNumberInput input,
+[data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] div {
+    background: #2e5a8a !important;
+    border: 1px solid #4a80b8 !important;
+    border-radius: 8px !important;
+    color: #ffffff !important;
+}
+[data-testid="stSidebar"] .stTextInput input::placeholder,
+[data-testid="stSidebar"] .stTextArea textarea::placeholder {
+    color: #8aaac8 !important;
 }
 
 /* ── expander ── */

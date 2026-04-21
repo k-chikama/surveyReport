@@ -411,9 +411,6 @@ with tab_preview:
             if not items:
                 continue
 
-            if sec.get("comment"):
-                st.info(sec["comment"].replace("\n", "  \n"))
-
             import pandas as pd
             df = pd.DataFrame(items, columns=["項目", "人数"])
             df["割合（%）"] = df["人数"].apply(lambda x: f"{x/base*100:.1f}%")
@@ -501,6 +498,9 @@ with tab_preview:
                 plt.tight_layout()
                 st.pyplot(fig)
                 plt.close(fig)
+
+            if sec.get("comment"):
+                st.info(sec["comment"].replace("\n", "  \n"))
 
             st.divider()
 

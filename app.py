@@ -23,8 +23,152 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("📊 アンケート集計レポート生成システム")
-st.caption("質問と集計データを入力して、印刷用PDFレポートを自動生成します。")
+st.markdown("""
+<style>
+/* ── 全体 ── */
+[data-testid="stAppViewContainer"] {
+    background: #f4f6fb;
+}
+[data-testid="stHeader"] {
+    background: transparent;
+}
+
+/* ── サイドバー ── */
+[data-testid="stSidebar"] {
+    background: #1a3c5e;
+}
+[data-testid="stSidebar"] * {
+    color: #e8f0fa !important;
+}
+[data-testid="stSidebar"] .stSelectbox label,
+[data-testid="stSidebar"] .stRadio label,
+[data-testid="stSidebar"] .stNumberInput label,
+[data-testid="stSidebar"] .stTextInput label {
+    color: #b0c8e8 !important;
+    font-size: 0.85rem !important;
+}
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 {
+    color: #ffffff !important;
+}
+[data-testid="stSidebar"] hr {
+    border-color: #2e5a8a !important;
+}
+[data-testid="stSidebar"] .stDownloadButton button {
+    background: #2e5a8a !important;
+    border: 1px solid #4a80b8 !important;
+    color: #fff !important;
+    width: 100%;
+}
+
+/* ── タブ ── */
+[data-testid="stTabs"] [role="tablist"] {
+    background: #fff;
+    border-radius: 12px 12px 0 0;
+    padding: 4px 8px 0;
+    gap: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+[data-testid="stTabs"] button[role="tab"] {
+    border-radius: 8px 8px 0 0 !important;
+    font-weight: 500;
+    padding: 8px 18px !important;
+    color: #5a7a9a !important;
+    transition: all 0.2s;
+}
+[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+    background: #1a3c5e !important;
+    color: #fff !important;
+}
+[data-testid="stTabs"] [role="tabpanel"] {
+    background: #fff;
+    border-radius: 0 12px 12px 12px;
+    padding: 24px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    min-height: 400px;
+}
+
+/* ── ボタン ── */
+.stButton > button {
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    transition: all 0.2s !important;
+}
+.stButton > button[kind="primary"] {
+    background: linear-gradient(135deg, #1a3c5e, #3a7ebf) !important;
+    border: none !important;
+    color: #fff !important;
+    box-shadow: 0 2px 6px rgba(58,126,191,0.35) !important;
+}
+.stButton > button[kind="primary"]:hover {
+    box-shadow: 0 4px 12px rgba(58,126,191,0.5) !important;
+    transform: translateY(-1px) !important;
+}
+.stButton > button[kind="secondary"] {
+    background: #fff !important;
+    border: 1px solid #d0dce8 !important;
+    color: #1a3c5e !important;
+}
+
+/* ── 入力欄 ── */
+.stTextInput input, .stTextArea textarea, .stNumberInput input {
+    border-radius: 8px !important;
+    border: 1px solid #d0dce8 !important;
+    background: #fafdff !important;
+}
+.stTextInput input:focus, .stTextArea textarea:focus {
+    border-color: #3a7ebf !important;
+    box-shadow: 0 0 0 2px rgba(58,126,191,0.15) !important;
+}
+
+/* ── expander ── */
+[data-testid="stExpander"] {
+    border: 1px solid #e2eaf3 !important;
+    border-radius: 10px !important;
+    background: #fafdff !important;
+    margin-bottom: 8px !important;
+}
+[data-testid="stExpander"] summary {
+    font-weight: 600 !important;
+    color: #1a3c5e !important;
+}
+
+/* ── info / success / warning ── */
+[data-testid="stAlert"] {
+    border-radius: 10px !important;
+}
+
+/* ── divider ── */
+hr {
+    border-color: #e2eaf3 !important;
+}
+
+/* ── dataframe ── */
+[data-testid="stDataFrame"] {
+    border-radius: 10px !important;
+    overflow: hidden !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ── ヘッダー
+st.markdown("""
+<div style="
+    background: linear-gradient(135deg, #1a3c5e 0%, #3a7ebf 100%);
+    border-radius: 16px;
+    padding: 28px 36px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 16px rgba(26,60,94,0.25);
+">
+    <h1 style="color:#fff; margin:0; font-size:1.8rem; font-weight:700;">
+        📊 アンケート集計レポート生成システム
+    </h1>
+    <p style="color:#b8d4f0; margin:8px 0 0; font-size:0.95rem;">
+        アンケートデータを入力してグラフ付きPDFレポートを自動生成します
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
 # セッション状態の初期化（localStorage からの復元含む）

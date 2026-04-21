@@ -77,7 +77,15 @@ def _make_styles():
         "Note", fontName=RL_FONT, fontSize=8, leading=12,
         textColor=colors.grey, spaceAfter=1 * mm,
     )
-    return title_style, sub_style, section_style, note_style
+    comment_style = ParagraphStyle(
+        "Comment", fontName=RL_FONT, fontSize=9, leading=14,
+        spaceBefore=2 * mm, spaceAfter=1 * mm,
+        textColor=colors.HexColor("#333333"),
+        backColor=colors.HexColor("#f5f5f5"),
+        leftIndent=4, rightIndent=4,
+        borderPad=4,
+    )
+    return title_style, sub_style, section_style, note_style, comment_style
 
 # ─────────────────────────────────────────────
 # 集計テーブル生成
@@ -250,7 +258,7 @@ GRAPH_HEIGHTS = {
     "横棒グラフ": None,   # 動的
 }
 
-def _make_block(section, section_style, note_style, graph_type, base):
+def _make_block(section, section_style, note_style, comment_style, graph_type, base):
     items = section["items"]
     heading = Paragraph(section["title"], section_style)
     inner = []
@@ -270,6 +278,10 @@ def _make_block(section, section_style, note_style, graph_type, base):
             ratio = GRAPH_HEIGHTS.get(graph_type, 0.45)
             img = RLImage(buf, width=CONTENT_W, height=CONTENT_W * ratio)
         inner.append(img)
+
+    if section.get("comment"):
+        inner.append(Spacer(1, 2 * mm))
+        inner.append(Paragraph(f"【コメント】{section['comment']}", comment_style))
 
     return KeepTogether([heading] + inner)
 
@@ -294,7 +306,7 @@ def generate_pdf(
         leftMargin=MARGIN_LR, rightMargin=MARGIN_LR,
         topMargin=MARGIN_TB, bottomMargin=MARGIN_TB,
     )
-    title_style, sub_style, section_style, note_style = _make_styles()
+    title_style, sub_style, section_style, note_style, comment_style = _make_styles()
 
     story = [
         Spacer(1, 10 * mm),
@@ -303,7 +315,7 @@ def generate_pdf(
         Spacer(1, 4 * mm),
     ]
     for sec in sections:
-        story.append(_make_block(sec, section_style, note_style, graph_type, base))
+        story.append(_make_block(sec, section_style, note_style, comment_style, graph_type, base))
         story.append(Spacer(1, 6 * mm))
 
     doc.build(story)

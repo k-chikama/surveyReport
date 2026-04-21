@@ -347,9 +347,18 @@ with tab_input:
                                                    label_visibility="collapsed")
                         new_counts.append((j, new_cnt))
 
-                    if st.button("💾 人数を保存", key=f"save_{idx}", use_container_width=True):
+                    new_comment = st.text_area(
+                        "コメント（任意）",
+                        value=sec.get("comment", ""),
+                        key=f"edit_comment_{idx}",
+                        placeholder="この設問に対するコメントや考察を入力（PDF・プレビューに反映されます）",
+                        height=80,
+                    )
+
+                    if st.button("💾 保存", key=f"save_{idx}", use_container_width=True):
                         for j, cnt in new_counts:
                             st.session_state.sections[idx]["items"][j]["count"] = cnt
+                        st.session_state.sections[idx]["comment"] = new_comment
                         save_to_storage()
                         st.toast("保存しました ✅")
                         st.rerun()
@@ -401,6 +410,9 @@ with tab_preview:
             items = [(r["label"], int(r["count"])) for r in sec["items"] if r["label"].strip()]
             if not items:
                 continue
+
+            if sec.get("comment"):
+                st.info(sec["comment"])
 
             import pandas as pd
             df = pd.DataFrame(items, columns=["項目", "人数"])

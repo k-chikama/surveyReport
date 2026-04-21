@@ -126,8 +126,7 @@ st.markdown("""
 /* ── サイドバー内の入力欄 ── */
 [data-testid="stSidebar"] .stTextInput input,
 [data-testid="stSidebar"] .stTextArea textarea,
-[data-testid="stSidebar"] .stNumberInput input,
-[data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] div {
+[data-testid="stSidebar"] .stNumberInput input {
     background: #2e5a8a !important;
     border: 1px solid #4a80b8 !important;
     border-radius: 8px !important;
@@ -136,6 +135,44 @@ st.markdown("""
 [data-testid="stSidebar"] .stTextInput input::placeholder,
 [data-testid="stSidebar"] .stTextArea textarea::placeholder {
     color: #8aaac8 !important;
+}
+
+/* ── サイドバー セレクトボックス ── */
+[data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] > div {
+    background: #2e5a8a !important;
+    border: 1px solid #4a80b8 !important;
+    border-radius: 8px !important;
+}
+[data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] span,
+[data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] div {
+    color: #ffffff !important;
+}
+[data-testid="stSidebar"] .stSelectbox svg {
+    fill: #b0c8e8 !important;
+}
+
+/* ── サイドバー ファイルアップローダー ── */
+[data-testid="stSidebar"] [data-testid="stFileUploader"] {
+    background: #2e5a8a !important;
+    border: 1px dashed #4a80b8 !important;
+    border-radius: 10px !important;
+    padding: 8px !important;
+}
+[data-testid="stSidebar"] [data-testid="stFileUploader"] span,
+[data-testid="stSidebar"] [data-testid="stFileUploader"] p,
+[data-testid="stSidebar"] [data-testid="stFileUploader"] small {
+    color: #b0c8e8 !important;
+}
+[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {
+    background: #2e5a8a !important;
+    border: 1px dashed #4a80b8 !important;
+    border-radius: 8px !important;
+}
+[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button {
+    background: #1a3c5e !important;
+    color: #fff !important;
+    border: 1px solid #4a80b8 !important;
+    border-radius: 6px !important;
 }
 
 /* ── expander ── */

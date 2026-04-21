@@ -331,15 +331,30 @@ with tab_input:
             st.info("まだ設問が追加されていません")
         else:
             for idx, sec in enumerate(st.session_state.sections):
-                with st.expander(f"Q{idx+1}. {sec['title']}", expanded=False):
-                    total = sum(int(r["count"]) for r in sec["items"])
-                    st.caption(f"回答合計: {total}人  |  項目数: {len(sec['items'])}件")
+                total = sum(int(r["count"]) for r in sec["items"])
+                with st.expander(f"Q{idx+1}. {sec['title']}　（合計 {total}人）", expanded=False):
 
-                    for row in sec["items"]:
-                        if row["label"].strip():
-                            pct = int(row["count"]) / total * 100 if total > 0 else 0
-                            st.write(f"- **{row['label']}**: {row['count']}人 ({pct:.1f}%)")
+                    # 人数編集フォーム
+                    new_counts = []
+                    for j, row in enumerate(sec["items"]):
+                        if not row["label"].strip():
+                            continue
+                        c1, c2 = st.columns([3, 1])
+                        c1.markdown(f"**{row['label']}**")
+                        new_cnt = c2.number_input("人数", min_value=0,
+                                                   value=int(row["count"]),
+                                                   key=f"edit_count_{idx}_{j}",
+                                                   label_visibility="collapsed")
+                        new_counts.append((j, new_cnt))
 
+                    if st.button("💾 人数を保存", key=f"save_{idx}", use_container_width=True):
+                        for j, cnt in new_counts:
+                            st.session_state.sections[idx]["items"][j]["count"] = cnt
+                        save_to_storage()
+                        st.toast("保存しました ✅")
+                        st.rerun()
+
+                    st.divider()
                     col_up, col_dn, col_del = st.columns(3)
                     if col_up.button("↑ 上へ", key=f"up_{idx}") and idx > 0:
                         s = st.session_state.sections
